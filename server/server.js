@@ -73,6 +73,30 @@ app.get('/api/health', (req, res) => {
     })
 })
 
+// TEMP DEBUG: Email Connection Check
+import nodemailer from 'nodemailer'
+app.get('/api/debug/email-check', async (req, res) => {
+    try {
+        const transporter = nodemailer.createTransport({
+            service: process.env.EMAIL_SERVICE || 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASSWORD
+            }
+        });
+
+        await transporter.verify();
+        res.json({ status: 'success', message: 'SMTP Connection Successful', user: process.env.EMAIL_USER });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: error.message,
+            code: error.code,
+            response: error.response
+        });
+    }
+});
+
 // Global Error Handler (must be last)
 app.use(errorHandler)
 
