@@ -2,7 +2,7 @@
 
 # Dependencies
 node_modules/
-package-lock.json
+# package-lock.json (Removed to ensure reproducible builds)
 
 # Environment variables (SENSITIVE - DO NOT COMMIT)
 .env
