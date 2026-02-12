@@ -43,7 +43,7 @@ export const otpVerifyLimiterEmail = rateLimit({
     max: 5,
     keyGenerator: (req) => {
         // Use email from request body as the key
-        return req.body.email || req.ip
+        return req.body.email || 'unknown_user'
     },
     message: {
         success: false,
