@@ -27,28 +27,32 @@ app.use(helmet({
     contentSecurityPolicy: false  // Disable CSP for API
 }))
 
-// CORS Middleware
-// CORS Middleware
+// CORS Middleware - Strict Configuration
 const allowedOrigins = [
     'http://localhost:5173',
-    'http://localhost:5174',
-    'https://parashari-jobs-portal.vercel.app',
-    process.env.FRONTEND_URL
-].filter(Boolean)
+    'https://parashari-jobs-portal.vercel.app'
+]
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (mobile apps, Postman, etc.)
+        // Allow requests with no origin (mobile apps, Curl, etc.)
         if (!origin) return callback(null, true)
 
         if (allowedOrigins.includes(origin)) {
             callback(null, true)
         } else {
-            console.log('Blocked by CORS:', origin) // Debugging log
+            console.warn(JSON.stringify({
+                level: "warn",
+                event: "cors_blocked",
+                origin: origin,
+                timestamp: new Date().toISOString()
+            }))
             callback(new Error('Not allowed by CORS'))
         }
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }))
 
 // Body Parser with size limits (protection against memory abuse)

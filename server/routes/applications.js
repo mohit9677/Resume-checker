@@ -4,15 +4,25 @@ import { upload } from '../middleware/upload.js'
 import { parseResume } from '../services/resumeParser.js'
 import { calculateATSScore } from '../services/atsScoring.js'
 import { sendHRNotification } from '../services/emailService.js'
-import { applicationLimiter } from '../middleware/rateLimiter.js'
+import { applicationLimiter, globalSubmissionLimiter } from '../middleware/rateLimiter.js'
 import AppError from '../utils/AppError.js'
 import logger from '../utils/logger.js'
 
 const router = express.Router()
 
 // POST /api/applications/submit - Submit application with strict ATS filtering
-router.post('/submit', applicationLimiter, upload.single('resume'), async (req, res, next) => {
+router.post('/submit', globalSubmissionLimiter, applicationLimiter, upload.single('resume'), async (req, res, next) => {
     try {
+        // Log Request Received
+        console.log(JSON.stringify({
+            level: "info",
+            event: "application_received",
+            ip: req.ip,
+            email: req.body.email,
+            jobCategory: req.body.jobCategory,
+            timestamp: new Date().toISOString()
+        }))
+
         const { fullName, email, phone, city, state, linkedin, collegeName, currentCompany, description, jobCategory, customJobRole } = req.body
         const file = req.file
 
@@ -42,7 +52,6 @@ router.post('/submit', applicationLimiter, upload.single('resume'), async (req, 
         }
 
         // 2. Parse Resume & Calculate Score
-        logger.info(`Processing application for ${email}`)
         const { text: resumeText, parsedData } = await parseResume(file.buffer, file.mimetype)
 
         // Determine category for scoring
@@ -56,33 +65,110 @@ router.post('/submit', applicationLimiter, upload.single('resume'), async (req, 
         let atsStatus = 'COMPLETED'
 
         if (isCustomCategory) {
-            // honest Scoring for custom roles might be inaccurate, but we still run it or default to a value.
-            // User requirement: "DO NOT MODIFY ATS SCORING LOGIC".
-            // However, previous logic skipped ATS for custom.
-            // Strict requirement says: "IF atsScore >= 60".
-            // We must decide if 'Custom' categories auto-qualify or get scored.
-            // Implicitly, if we skip scoring, we can't filter by score.
-            // Let's run scoring if possible, or assume 0 if irrelevant.
-            // Actually, the previous code set atsStatus='SKIPPED' and implicitly qualified them.
-            // To stick to "Strict Filtering", we should probably still score them if we can, 
-            // OR treat SKIPPED as Qualified (Score=100 effectively).
-            // Let's preserve the "Skipped means Qualified" intent by assigning a passing score if skipped, 
-            // or better, just pass the logic check. 
-            // But the user said "Only >= 60 triggers email".
-            // I will treat "Skipped" as a score of 75 (Passing) to align with strict logic without breaking custom roles.
-            logger.info('Custom category detected. Assigning passing score for manual review.')
-            atsScore = 75
+            atsScore = 75 // Default passing score for custom roles (Manual Review implied)
             atsStatus = 'SKIPPED'
         } else {
             atsScore = calculateATSScore(parsedData, resumeText, jobCategory)
-            logger.info(`ATS score calculated: ${atsScore}`)
         }
+
+        // Log ATS Score
+        console.log(JSON.stringify({
+            level: "info",
+            event: "ats_score_calculated",
+            email: email,
+            score: atsScore,
+            category: jobCategory,
+            timestamp: new Date().toISOString()
+        }))
 
         // 3. Decision Logic
         if (atsScore >= 60) {
-            // --- QUALIFIED ---
+            // --- QUALIFIED (>= 60) ---
 
-            // A. Create Candidate Record (Metadata ONLY)
+            // A. Attempt to Send Email to HR FIRST
+            try {
+                const candidateInfo = {
+                    fullName,
+                    email,
+                    phone,
+                    city,
+                    state,
+                    linkedin,
+                    currentCompany,
+                    collegeName,
+                    description,
+                    jobCategory,
+                    customJobRole,
+                    atsScore,
+                    atsStatus,
+                    resumeFileName: file.originalname
+                }
+
+                await sendHRNotification(candidateInfo, file.buffer)
+
+                // Log Email Success
+                console.log(JSON.stringify({
+                    level: "info",
+                    event: "email_sent_success",
+                    email: email,
+                    score: atsScore,
+                    timestamp: new Date().toISOString()
+                }))
+
+                // B. Save Metadata to MongoDB (ONLY if email succeeded)
+                const candidateData = {
+                    ...candidateInfo,
+                    // NO resumeFileId
+                    parsedData,
+                    status: 'qualified',
+                    emailSentToHR: true,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+
+                const result = await candidates.insertOne(candidateData)
+                const applicationId = result.insertedId.toString().substring(0, 8).toUpperCase()
+
+                // C. Return Success
+                return res.status(200).json({
+                    success: true,
+                    message: "Application submitted successfully.",
+                    applicationId,
+                    score: atsScore,
+                    atsStatus,
+                    result: 'QUALIFIED'
+                })
+
+            } catch (emailError) {
+                // Log Email Failure
+                console.error(JSON.stringify({
+                    level: "error",
+                    event: "email_send_failed",
+                    email: email,
+                    error: emailError.message,
+                    timestamp: new Date().toISOString()
+                }))
+
+                // CRITICAL: Return 500 and DO NOT SAVE DATA
+                return res.status(500).json({
+                    success: false,
+                    message: "Failed to process application. Please try again."
+                })
+            }
+
+        } else {
+            // --- REJECTED (< 60) ---
+
+            // Log Rejection
+            console.log(JSON.stringify({
+                level: "info",
+                event: "candidate_rejected",
+                email: email,
+                score: atsScore,
+                timestamp: new Date().toISOString()
+            }))
+
+            // A. Store Metadata (Status: Rejected)
             const candidateData = {
                 fullName,
                 email,
@@ -95,52 +181,19 @@ router.post('/submit', applicationLimiter, upload.single('resume'), async (req, 
                 description: description || '',
                 jobCategory,
                 customJobRole: jobCategory === 'Custom' ? customJobRole : undefined,
-                // NO resumeFileId
-                // NO resumeFileName (optional, maybe keep name for reference but no file)
                 parsedData,
                 atsScore,
                 atsStatus,
-                status: 'qualified',
+                status: 'rejected',
                 emailSentToHR: false,
                 createdAt: new Date(),
                 updatedAt: new Date()
             }
 
-            const result = await candidates.insertOne(candidateData)
-            const applicationId = result.insertedId.toString().substring(0, 8).toUpperCase()
+            // We store rejected candidates for analytics/history, but no resume.
+            await candidates.insertOne(candidateData)
 
-            // B. Send Email to HR (Attach buffer from RAM)
-            try {
-                await sendHRNotification({ ...candidateData, _id: result.insertedId, resumeFileName: file.originalname }, file.buffer)
-
-                await candidates.updateOne(
-                    { _id: result.insertedId },
-                    { $set: { emailSentToHR: true } }
-                )
-                logger.info(`HR notified for ${fullName} (Score: ${atsScore})`)
-            } catch (emailError) {
-                logger.error('Failed to send HR email:', emailError)
-                // We stored metadata, so we don't fail the request, but log the error.
-            }
-
-            // C. Return Success
-            return res.status(200).json({
-                success: true,
-                message: "Application submitted successfully.",
-                applicationId,
-                score: atsScore,
-                atsStatus,
-                result: 'QUALIFIED'
-            })
-
-        } else {
-            // --- REJECTED ---
-            // DO NOT send email
-            // DO NOT store metadata
-            // DO NOT store resume
-
-            logger.info(`Application rejected for ${email} (Score: ${atsScore} < 60)`)
-
+            // B. Return Failure (200 OK with success: false)
             return res.status(200).json({
                 success: false,
                 message: "Application does not meet ATS criteria.",
@@ -151,7 +204,14 @@ router.post('/submit', applicationLimiter, upload.single('resume'), async (req, 
         }
 
     } catch (error) {
-        logger.error('Application submission error:', error)
+        // Log Unexpected Error
+        console.error(JSON.stringify({
+            level: "error",
+            event: "server_error",
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+        }))
         next(new AppError(error.message || 'Failed to submit application', 500))
     }
 })
