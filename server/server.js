@@ -1,16 +1,13 @@
+import 'dotenv/config' // Load env vars before anything else
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
-import dotenv from 'dotenv'
 import { connectDB } from './config/database.js'
 import otpRoutes from './routes/otp.js'
 import candidateRoutes from './routes/candidates.js'
 import applicationRoutes from './routes/applications.js'
 import errorHandler from './middleware/errorHandler.js'
 import logger from './utils/logger.js'
-
-
-dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 5000
