@@ -12,16 +12,11 @@
 - 📧 **Email Notifications** for both candidates (OTP) and HR (qualified profiles)
 - 🗄️ **Cloud Storage** using MongoDB GridFS for resume files
 - 🔒 **Submission Limits** (max 3 applications per email)
-- 🌐 **Production-Ready** deployed on Vercel (Frontend) + Render (Backend)
+- 🌐 **Project Status**: Local Development Only
 
 ---
 
-## 🌐 Live Demo
 
-- **Frontend**: [https://astrobharat-jobs-portal.vercel.app](https:// astrobharat-jobs-portal.vercel.app)
-- **Backend**: [https://parashari-jobs-backend.onrender.com](https://parashari-jobs-backend.onrender.com)
-
----
 
 ## 🛠️ Tech Stack
 
@@ -49,13 +44,7 @@
 | **dotenv 16.4.1** | Environment variable management |
 | **CORS 2.8.5** | Cross-origin resource sharing |
 
-### Deployment
-| Service | Purpose |
-|---------|---------|
-| **Vercel** | Frontend hosting |
-| **Render** | Backend hosting (Free tier) |
-| **MongoDB Atlas** | Cloud database |
-| **Gmail SMTP** | Transactional emails |
+
 
 ---
 
@@ -165,9 +154,7 @@ parashari-job-portal/
 
 ## 📡 API Documentation
 
-### Base URL
 - **Development**: `http://localhost:5000/api`
-- **Production**: `https://parashari-jobs-backend.onrender.com/api`
 
 ---
 
@@ -428,13 +415,7 @@ HR_EMAIL=hr@company.com
 FRONTEND_URL=https://astrobharat-jobs-portal.vercel.app
 ```
 
-### Frontend (Vercel Environment Variables)
 
-```env
-VITE_API_URL=https://parashari-jobs-backend.onrender.com
-```
-
----
 
 ## ⚙️ Installation Guide
 
@@ -491,59 +472,7 @@ npm run dev
 
 ---
 
-## 🚀 Deployment Guide
 
-### Frontend (Vercel)
-
-1. **Connect GitHub Repository**
-   - Go to [vercel.com](https://vercel.com) → Import Project
-   - Select `parashari-jobs` repository
-
-2. **Configure Build Settings**
-   - Framework Preset: **Vite**
-   - Root Directory: `./`
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-
-3. **Add Environment Variable**
-   ```
-   VITE_API_URL = https://parashari-jobs-backend.onrender.com
-   ```
-
-4. **Deploy**
-   - Vercel auto-deploys on every `git push`
-
----
-
-### Backend (Render)
-
-1. **Create Web Service**
-   - Go to [render.com](https://render.com) → New → Web Service
-   - Connect GitHub repository
-
-2. **Configure Settings**
-   - Name: `parashari-jobs-backend`
-   - Root Directory: `server`
-   - Runtime: **Node**
-   - Build Command: `npm install`
-   - Start Command: `npm start`
-   - Instance Type: **Free**
-
-3. **Add Environment Variables**
-   ```
-   PORT = 5000
-   MONGODB_URI = <your-mongodb-uri>
-   EMAIL_SERVICE = gmail
-   EMAIL_USER = <your-email>
-   EMAIL_PASSWORD = <app-password>
-   HR_EMAIL = <hr-email>
-   FRONTEND_URL = https://astrobharat-jobs-portal.vercel.app
-   ```
-
-4. **Deploy**
-   - Render auto-deploys on every `git push`
-
----
 
 ## 🔒 Security Features
 
@@ -562,9 +491,7 @@ npm run dev
 
 ## ⚠️ Known Issues
 
-1. **Free Tier Limitations (Render)**
-   - Backend spins down after inactivity (50s delay on cold start)
-   - Mitigate: Upgrade to paid plan or use keep-alive service
+
 
 2. **Email Delivery**
    - Gmail may block emails if sent too frequently

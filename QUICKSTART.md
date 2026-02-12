@@ -56,13 +56,12 @@ mongod
 
 **Terminal 2 - Backend**:
 ```powershell
-cd "d:/resume checker/server"
+cd server
 npm start
 ```
 
 **Terminal 3 - Frontend**:
 ```powershell
-cd "d:/resume checker"
 npm run dev
 ```
 
@@ -72,13 +71,12 @@ Just open **2 terminals** (no need for mongod):
 
 **Terminal 1 - Backend**:
 ```powershell
-cd "d:/resume checker/server"
+cd server
 npm start
 ```
 
 **Terminal 2 - Frontend**:
 ```powershell
-cd "d:/resume checker"  
 npm run dev
 ```
 
