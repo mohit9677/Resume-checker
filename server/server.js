@@ -77,18 +77,29 @@ app.get('/api/health', (req, res) => {
 app.use(errorHandler)
 
 // Start server
+// Start server
 async function startServer() {
     try {
+        console.log("STEP 1: Starting server...")
+        console.log("PORT:", PORT)
+        console.log("NODE_ENV:", process.env.NODE_ENV)
+
+        console.log("STEP 2: Connecting to DB...")
         await connectDB()
-        app.listen(PORT, () => {
+
+        console.log("STEP 3: DB connected. Starting listen...")
+
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log("STEP 4: Server listening on port", PORT)
             logger.info(`🚀 Server running on port ${PORT}`)
-            logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`)
         })
+
     } catch (error) {
-        logger.error('Failed to start server:', error)
+        console.error("FATAL STARTUP ERROR:", error)
         process.exit(1)
     }
 }
 
+console.log("Process starting...")
 startServer()
 

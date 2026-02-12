@@ -6,10 +6,12 @@ let gridFSBucket = null
 
 export async function connectDB() {
     try {
+        console.log("Attempting to connect to MongoDB URI:", process.env.MONGODB_URI.split('@')[1]) // Log sanitized URI
         const client = await MongoClient.connect(process.env.MONGODB_URI, {
             serverSelectionTimeoutMS: 5000,
             connectTimeoutMS: 10000
         })
+        console.log("MongoDB connection established. Getting DB instance...")
         db = client.db()
         // Create and verify indexes
         await db.collection('candidates').createIndex({ email: 1 })
