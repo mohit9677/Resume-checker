@@ -35,7 +35,7 @@ app.use(cors({
         // Allow requests with no origin (mobile apps, Curl, etc.)
         if (!origin) return callback(null, true)
 
-        if (allowedOrigins.includes(origin)) {
+        if (allowedOrigins.includes(origin) || origin?.endsWith('.vercel.app')) {
             callback(null, true)
         } else {
             console.warn(JSON.stringify({
