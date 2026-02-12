@@ -161,6 +161,7 @@ function ApplicationPage() {
             setTimeout(() => setCanResend(true), 60000)
 
         } catch (error) {
+            console.error("OTP API Error:", error);
             toast.error(error.response?.data?.message || 'Failed to send OTP')
         } finally {
             setLoading(false)
