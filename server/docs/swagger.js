@@ -1,6 +1,6 @@
 import swaggerJsdoc from 'swagger-jsdoc'
 import swaggerUi from 'swagger-ui-express'
-import { authenticateToken } from '../middleware/auth.js'
+
 
 const options = {
     definition: {
@@ -88,13 +88,8 @@ const swaggerSpec = swaggerJsdoc(options)
 
 // Setup function to configure Swagger in Express
 export function setupSwagger(app) {
-    // Protected Swagger UI - require admin authentication
-    if (process.env.NODE_ENV === 'production') {
-        app.use('/api/docs', authenticateToken, swaggerUi.serve, swaggerUi.setup(swaggerSpec))
-    } else {
-        // Development: allow public access
-        app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
-    }
+    // Public Swagger UI - Admin system removed
+    app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
     // Swagger JSON endpoint
     app.get('/api/docs.json', (req, res) => {
