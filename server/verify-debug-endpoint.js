@@ -4,7 +4,7 @@ async function check() {
     try {
         console.log('Fetching...');
         const res = await fetch('https://parashari-jobs-portal-backend.onrender.com/api/debug/email-check', {
-            signal: AbortSignal.timeout(10000)
+            signal: AbortSignal.timeout(30000)
         });
         console.log('Status:', res.status);
         const text = await res.text();
