@@ -2,6 +2,10 @@ import 'dotenv/config' // Load env vars before anything else
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
+import dns from 'dns'
+
+// FORCE IPv4 (Fixes Render/Gmail ETIMEDOUT issues)
+dns.setDefaultResultOrder('ipv4first')
 import { connectDB } from './config/database.js'
 import otpRoutes from './routes/otp.js'
 import candidateRoutes from './routes/candidates.js'
