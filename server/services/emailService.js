@@ -7,6 +7,8 @@ function initTransporter() {
   if (transporter) return transporter
 
   transporter = nodemailer.createTransport({
+    service: process.env.EMAIL_SERVICE || 'gmail',
+    host: 'smtp.gmail.com',
     port: 465,
     secure: true, // Use SSL
     auth: {
